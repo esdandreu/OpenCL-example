@@ -1,0 +1,36 @@
+name: Build Python wheels
+
+on: 
+  workflow_dispatch:
+  # Uncomment to build when pushing to main
+  # push:
+  #   branches:
+  #     - "main"
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+        
+      - name: Restore artifacts, or setup vcpkg for building artifacts
+        uses: lukka/run-vcpkg@v10.1
+
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.3.1
+        env:
+          # vcpkg does not support i686 nor aarch64
+          CIBW_ARCHS_LINUX: "x86_64 ppc64le s390x"
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
