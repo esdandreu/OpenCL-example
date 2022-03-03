@@ -3,9 +3,9 @@ name: Build and test
 on: 
   workflow_dispatch:
   # Uncomment to build when pushing to main
-  push:
-    branches:
-      - "main"
+  # push:
+  #   branches:
+  #     - "main"
 
 jobs:
   cpp:

@@ -1,3 +1,41 @@
+# Assignment
+Make an example. Demonstrate performance speed-up. Demonstrate scalability -
+how does performance changes with the number of cores?
+
+- [ ] Explain parallelization model in OpenCL. How can OpenCL communicate with so
+many devices?
+
+- [ ] Explain hosts, devices, platforms.
+
+- [ ] How does OpenCL compile kernel code? 
+
+- [ ] Explain OpenCL Installable Client Driver (ICD) and ICD Loader.
+
+- [ ] Explain heterogeneous computing.
+
+- [ ] Identify  a practical problem suitable for solving with OpenCL. Implement
+a solution with and without OpenCL support. Demonstrate the performance  gain
+from using OpenCL solution.
+
+- [ ] Change  the problem size. Observe the difference in performance between
+the single threaded and OpenCL solutions as you increase the problem size.
+
+- [ ] Observe the point at which increasing the problem size does not change
+the performance gain. Comment why.
+
+# OpenCL
+> Open standard for parallel programming of heterogeneous systems
+
+- Kernel
+
+- Host
+
+- Platform: The environment where the program will be executed on
+
+- Device
+
+SDK and Runtime?
+
 # Python C++ extension
 A template for a standalone C++ library with dependencies managed by
 [vcpkg](https://github.com/microsoft/vcpkg) accessible through Python using

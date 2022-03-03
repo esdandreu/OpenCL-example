@@ -5,6 +5,8 @@
     "dependencies": [
         "pybind11",
         "fftw3",
+        "clfft",
+        "opencl",
         "gtest"
     ]
 }
