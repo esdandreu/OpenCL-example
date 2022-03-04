@@ -1,11 +1,11 @@
 #include "matmul.hpp"
+#include <iostream>
 
 int add(int a, int b) {
     return a + b;
 }
 
-Eigen::MatrixXf
-matmul::opencl(const Eigen::MatrixXf a, const Eigen::MatrixXf b) {
+Eigen::MatrixXf matmul::opencl(Eigen::MatrixXf& a, Eigen::MatrixXf& b) {
     int heightA = a.rows();
     int widthB  = b.cols();
     int heightB = b.rows();
@@ -22,7 +22,13 @@ matmul::opencl(const Eigen::MatrixXf a, const Eigen::MatrixXf b) {
         program, "matmul");
 
     // Create buffers (device memory)
+
+    // ! Can't read from A
+    // cl::Buffer A_device(context, CL_MEM_READ_ONLY, sizeof(a), a.data());
     cl::Buffer A_device(context, A.begin(), A.end(), /*Read only*/ true);
+
+    // Seems to be equivalent and we skip the reshape
+    // cl::Buffer B_device(context, CL_MEM_READ_ONLY, sizeof(b), b.data());
     cl::Buffer B_device(context, B.begin(), B.end(), /*Read only*/ true);
     cl::Buffer output(
         context, CL_MEM_WRITE_ONLY, sizeof(float) * widthB * widthB);

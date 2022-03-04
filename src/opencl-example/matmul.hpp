@@ -13,7 +13,7 @@
 
 namespace matmul {
 
-Eigen::MatrixXf opencl(const Eigen::MatrixXf a, const Eigen::MatrixXf b);
+Eigen::MatrixXf opencl(Eigen::MatrixXf& a, Eigen::MatrixXf& b);
 
 }
 
