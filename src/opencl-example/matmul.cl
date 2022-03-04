@@ -10,5 +10,5 @@ __kernel void matmul(__global float* output,
     for (int i = 0; i < heightB; i++) {
         sum += A[row * heightB + i] * B[i * widthB + col];
     }
-    output[row * widthB + col] = B[3];
+    output[row * widthB + col] = sum;
 }
