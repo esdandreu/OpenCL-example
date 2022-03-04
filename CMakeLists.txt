@@ -2,8 +2,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Compliler flags
-set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall --std=c++17 -O3 -fPIC" )
-set( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -O3 -fPIC" )
+set(CMAKE_CXX_STANDARD 17)
 
 # Set CMake to use `vcpkg` to install dependencies. I avoids the need of
 # passing it as an argument to `cmake`.
@@ -46,11 +45,11 @@ project(${PROJECT_NAME} VERSION ${VERSION_STRING})
 
 # It is important that the library is static in order to build its Python
 # wrapper
-find_package(FFTW3 CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 find_package(OpenCL REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC 
-    src/${PROJECT_NAME}/myproject.cpp
+    src/${PROJECT_NAME}/matmul.cpp
 )
 
 target_include_directories(${PROJECT_NAME} 
@@ -60,7 +59,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE
-        FFTW3::fftw3
+        Eigen3::Eigen
         OpenCL::OpenCL
 )
 
@@ -83,7 +82,7 @@ if(BUILD_TESTS)
     # A possible extension here is to add all `.cpp` files under the `tests`
     # folder.
     add_executable(${PROJECT_TESTS_NAME} 
-        tests/test_myproject.cpp
+        tests/test_matmul.cpp
     )
 
     target_link_libraries(${PROJECT_TESTS_NAME} 

@@ -31,6 +31,7 @@
 #define CL_HPP_MINIMUM_OPENCL_VERSION 120
 #include <CL/cl2.hpp>
 
+#include <gtest/gtest.h>
 #include <util.hpp>
 
 
@@ -44,7 +45,7 @@
 #define TOL (0.001)   // tolerance used in floating point comparisons
 #define LENGTH (1024) // length of vectors a, b, and c
 
-int main(void) {
+TEST(vadd_chain, vadd_chain_test)) {
     std::vector<float> h_a(LENGTH);                    // a vector
     std::vector<float> h_b(LENGTH);                    // b vector
     std::vector<float> h_c(LENGTH);                    // c vector
