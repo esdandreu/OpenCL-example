@@ -79,10 +79,9 @@ if(BUILD_TESTS)
     # Test.
     set(PROJECT_TESTS_NAME test_${PROJECT_NAME})
 
-    # A possible extension here is to add all `.cpp` files under the `tests`
-    # folder.
+    file(GLOB TEST_FILES tests/test_*.cpp)
     add_executable(${PROJECT_TESTS_NAME} 
-        tests/test_matmul.cpp
+        ${TEST_FILES}
     )
 
     target_link_libraries(${PROJECT_TESTS_NAME} 
@@ -93,6 +92,30 @@ if(BUILD_TESTS)
 
     include(GoogleTest)
     gtest_discover_tests(${PROJECT_TESTS_NAME})
+
+endif()
+
+# ------------------------- Build library benchmamrk --------------------------
+# Recomended refactor into benchmark/CMakeLists.txt
+
+option(BUILD_BENCHMARK "Build benchmark" ON)
+if(BUILD_BENCHMARK)
+    message(STATUS "Build benchmark")
+    find_package(benchmark CONFIG REQUIRED)
+
+    set(PROJECT_BENCHMARK_NAME benchmark_${PROJECT_NAME})
+
+    file(GLOB BENCHMARK_FILES benchmark/bm_*.cpp)
+    add_executable(${PROJECT_BENCHMARK_NAME} 
+        ${BENCHMARK_FILES}
+    )
+
+    target_link_libraries(${PROJECT_BENCHMARK_NAME} 
+        PRIVATE
+            ${PROJECT_NAME}
+            benchmark::benchmark_main
+    )
+
 
 endif()
 

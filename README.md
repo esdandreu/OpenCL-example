@@ -201,3 +201,12 @@ ctest --test-dir build
 ```
 pytest tests
 ```
+
+## Benchmark
+
+### Benchmark the C++ library with Google Benchmark
+
+Run the compiled executable
+```
+benchmark_opencl-example.exe --benchmark_out=benchmark/results.json
+```
