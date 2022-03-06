@@ -1,13 +1,26 @@
 #include "matmul.hpp"
 #include <iostream>
 
-matmul::opencl::opencl() {
-    // Initialize the function
-    // TODO assign number of cores and device
-    context = cl::Context(CL_DEVICE_TYPE_DEFAULT);
-    queue = cl::CommandQueue(context);
+matmul::opencl::opencl(cl::Device& device) : device(device) {
+    // if num_threads -> createSubDevices()
+    // std::vector<cl::Device> devices;
+    // cl_device_partition_property properties = {
+    // CL_DEVICE_PARTITION_BY_COUNTS,
+    //     1, CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 };
+    // if (device.createSubDevices(&properties, &devices) != CL_SUCCESS) {
+    //     std::cout << "Error creating subdevices" << std::endl;
+    // }
+    cl_int err;
+    try {
+        context = cl::Context(device, /*properties*/ nullptr,
+            /*callback*/ nullptr,
+            /*data*/ nullptr, &err);
+    } catch (...) {
+        std::cout << "Error creating context" << std::endl;
+    }
+    std::cout << "Hello world " << err << std::endl;
+    queue   = cl::CommandQueue(context);
     program = matmul::cl_utils::build_program(context, "matmul");
-    std::cout << "Build program" << std::endl;
 }
 
 Eigen::MatrixXf

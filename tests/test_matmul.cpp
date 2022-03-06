@@ -27,20 +27,27 @@ TEST(OpenCLTest, PrintDevices) {
         std::vector<cl::Device> devices;
         p.getDevices(CL_DEVICE_TYPE_ALL, &devices);
         for (auto& device : devices) {
+            std::cout << "\t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+            // Try to construct a matmul::opencl object with each device
+            matmul::opencl clmatmul(device);
             std::cout
-                << "\t" << device.getInfo<CL_DEVICE_NAME>() << std::endl
                 << "\t\tMax Compute Units: "
-                << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl
+                << clmatmul.device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>()
+                << std::endl
                 << "\t\tGlobal Memory: "
-                << device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() << std::endl
+                << clmatmul.device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()
+                << std::endl
                 << "\t\tMax Clock Frequency: "
-                << device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>() << std::endl
+                << clmatmul.device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>()
+                << std::endl
                 << "\t\tMax Memory Allocation: "
-                << device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>() << std::endl
+                << clmatmul.device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()
+                << std::endl
                 << "\t\tLocal Memory: "
-                << device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() << std::endl
-                << "\t\tAvailable: " << device.getInfo<CL_DEVICE_AVAILABLE>()
-                << std::endl;
+                << clmatmul.device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()
+                << std::endl
+                << "\t\tAvailable: "
+                << clmatmul.device.getInfo<CL_DEVICE_AVAILABLE>() << std::endl;
         }
         std::cout << std::endl;
     }
