@@ -28,26 +28,28 @@ TEST(OpenCLTest, PrintDevices) {
         p.getDevices(CL_DEVICE_TYPE_ALL, &devices);
         for (auto& device : devices) {
             std::cout << "\t" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+            cl_int max_sub_devices;
+            device.getInfo(
+                CL_DEVICE_PARTITION_MAX_SUB_DEVICES, &max_sub_devices);
+            std::cout << "\t\tMax Sub Devices: " << max_sub_devices
+                      << std::endl;
             // Try to construct a matmul::opencl object with each device
             matmul::opencl clmatmul(device);
-            std::cout
-                << "\t\tMax Compute Units: "
-                << clmatmul.device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>()
-                << std::endl
-                << "\t\tGlobal Memory: "
-                << clmatmul.device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()
-                << std::endl
-                << "\t\tMax Clock Frequency: "
-                << clmatmul.device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>()
-                << std::endl
-                << "\t\tMax Memory Allocation: "
-                << clmatmul.device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()
-                << std::endl
-                << "\t\tLocal Memory: "
-                << clmatmul.device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()
-                << std::endl
-                << "\t\tAvailable: "
-                << clmatmul.device.getInfo<CL_DEVICE_AVAILABLE>() << std::endl;
+            std::cout << "\t\tMax Compute Units: "
+                      << clmatmul.device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>()
+                      << std::endl
+                      << "\t\tGlobal Memory: "
+                      << clmatmul.device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()
+                      << std::endl
+                      << "\t\tMax Memory Allocation: "
+                      << clmatmul.device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()
+                      << std::endl
+                      << "\t\tLocal Memory: "
+                      << clmatmul.device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()
+                      << std::endl
+                      << "\t\tAvailable: "
+                      << clmatmul.device.getInfo<CL_DEVICE_AVAILABLE>()
+                      << std::endl;
         }
         std::cout << std::endl;
     }
@@ -58,4 +60,32 @@ TEST(OpenCLTest, Base) {
     Eigen::MatrixXf b = Eigen::MatrixXf::Random(2, 2);
     matmul::opencl clmatmul;
     ASSERT_TRUE(clmatmul(a, b).isApprox(a * b));
+}
+
+TEST(OpenCLTest, InvalidDevice) {
+    cl::Device device;
+    ASSERT_THROW(matmul::opencl clmatmul(device), cl::Error);
+}
+
+TEST(OpenCLTest, NumUnits) {
+    Eigen::MatrixXf a = Eigen::MatrixXf::Random(2, 2);
+    Eigen::MatrixXf b = Eigen::MatrixXf::Random(2, 2);
+
+    std::vector<cl::Platform> platforms;
+    cl::Platform::get(&platforms);
+    for (auto& p : platforms) {
+        std::vector<cl::Device> devices;
+        p.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+        for (auto& device : devices) {
+            cl_int max_sub_devices;
+            device.getInfo(
+                CL_DEVICE_PARTITION_MAX_SUB_DEVICES, &max_sub_devices);
+            if (max_sub_devices > 1) {
+                std::cout << "Device: " << device.getInfo<CL_DEVICE_NAME>()
+                          << std::endl;
+                matmul::opencl clmatmul(cl::Device::getDefault(), 1);
+                EXPECT_TRUE(clmatmul(a, b).isApprox(a * b));
+            }
+        }
+    }
 }
