@@ -13,8 +13,17 @@
 
 namespace matmul {
 
-Eigen::MatrixXf opencl(Eigen::MatrixXf& a, Eigen::MatrixXf& b);
+class opencl {
+    cl::Context context;
+    cl::CommandQueue queue;
+    cl::Program program;
 
-}
+    public:
+    opencl();
+    Eigen::MatrixXf operator()(Eigen::MatrixXf& a, Eigen::MatrixXf& b);
+};
+
+
+} // namespace matmul
 
 #endif

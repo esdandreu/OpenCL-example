@@ -1,11 +1,17 @@
 #include "matmul.hpp"
 #include <iostream>
 
-int add(int a, int b) {
-    return a + b;
+matmul::opencl::opencl() {
+    // Initialize the function
+    // TODO assign number of cores and device
+    context = cl::Context(CL_DEVICE_TYPE_DEFAULT);
+    queue = cl::CommandQueue(context);
+    program = matmul::cl_utils::build_program(context, "matmul");
+    std::cout << "Build program" << std::endl;
 }
 
-Eigen::MatrixXf matmul::opencl(Eigen::MatrixXf& a, Eigen::MatrixXf& b) {
+Eigen::MatrixXf
+matmul::opencl::operator()(Eigen::MatrixXf& a, Eigen::MatrixXf& b) {
     int heightA = a.rows();
     int widthB  = b.cols();
     int heightB = b.rows();
@@ -14,15 +20,11 @@ Eigen::MatrixXf matmul::opencl(Eigen::MatrixXf& a, Eigen::MatrixXf& b) {
     auto A = a.reshaped<Eigen::RowMajor>();
     auto B = b.reshaped<Eigen::RowMajor>();
 
-    // Create context
-    cl::Context context(CL_DEVICE_TYPE_DEFAULT);
-    cl::CommandQueue queue(context);
-    cl::Program program = matmul::cl_utils::build_program(context, "matmul");
+    // Our program
     cl::KernelFunctor<cl::Buffer, int, int, cl::Buffer, cl::Buffer> matmul(
         program, "matmul");
 
     // Create buffers (device memory)
-
     // ! Can't read from A
     // cl::Buffer A_device(context, CL_MEM_READ_ONLY, sizeof(a), a.data());
     cl::Buffer A_device(context, A.begin(), A.end(), /*Read only*/ true);

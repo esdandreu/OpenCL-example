@@ -1,6 +1,6 @@
 {
   "context": {
-    "date": "2022-03-05T19:26:15+01:00",
+    "date": "2022-03-06T12:56:40+01:00",
     "host_name": "KENOBI",
     "executable": "C:\\Users\\esdan\\Desktop\\OpenCL-example\\build\\Debug\\benchmark_opencl-example.exe",
     "num_cpus": 12,
@@ -36,17 +36,73 @@
   },
   "benchmarks": [
     {
-      "name": "BM_OpenCL",
+      "name": "ClMatMul/BM_OpenCL/8",
       "family_index": 0,
       "per_family_instance_index": 0,
-      "run_name": "BM_OpenCL",
+      "run_name": "ClMatMul/BM_OpenCL/8",
       "run_type": "iteration",
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 1,
-      "real_time": 5.8304020000014138e+08,
-      "cpu_time": 5.1562500000000000e+08,
+      "iterations": 2133,
+      "real_time": 3.1177965307191707e+05,
+      "cpu_time": 3.0766526019690576e+05,
+      "time_unit": "ns"
+    },
+    {
+      "name": "ClMatMul/BM_OpenCL/64",
+      "family_index": 0,
+      "per_family_instance_index": 1,
+      "run_name": "ClMatMul/BM_OpenCL/64",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 2358,
+      "real_time": 3.5470364715493628e+05,
+      "cpu_time": 3.4457167090754875e+05,
+      "time_unit": "ns"
+    },
+    {
+      "name": "ClMatMul/BM_OpenCL/512",
+      "family_index": 0,
+      "per_family_instance_index": 2,
+      "run_name": "ClMatMul/BM_OpenCL/512",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 2240,
+      "real_time": 3.0633321428337827e+05,
+      "cpu_time": 3.0691964285714284e+05,
+      "time_unit": "ns"
+    },
+    {
+      "name": "ClMatMul/BM_OpenCL/4096",
+      "family_index": 0,
+      "per_family_instance_index": 3,
+      "run_name": "ClMatMul/BM_OpenCL/4096",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 2358,
+      "real_time": 2.9775640373615874e+05,
+      "cpu_time": 2.9156064461407973e+05,
+      "time_unit": "ns"
+    },
+    {
+      "name": "ClMatMul/BM_OpenCL/8192",
+      "family_index": 0,
+      "per_family_instance_index": 4,
+      "run_name": "ClMatMul/BM_OpenCL/8192",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 2489,
+      "real_time": 2.9558814785179641e+05,
+      "cpu_time": 2.8877059059863398e+05,
       "time_unit": "ns"
     },
     {
@@ -58,9 +114,9 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 2,
-      "real_time": 4.1635604999964929e+08,
-      "cpu_time": 4.2187500000000000e+08,
+      "iterations": 28000000,
+      "real_time": 2.4632582143177778e+01,
+      "cpu_time": 2.4553571428571427e+01,
       "time_unit": "ns"
     }
   ]
