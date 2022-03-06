@@ -16,52 +16,86 @@ TEST(EigenTest, Multiply) {
 TEST(OpenCLTest, MatmulFileExists) {
     std::string name        = "matmul";
     std::filesystem::path f = matmul::cl_utils::get_program_path(name);
-    ASSERT_EQ(std::filesystem::exists(f), true);
+    ASSERT_TRUE(std::filesystem::exists(f));
 }
 
-// TEST(OpenCLTest, Debug) {
-//     Eigen::MatrixXf a(2, 2);
-//     a << 1, 2, 2, 1;
-//     Eigen::MatrixXf b(2, 2);
-//     b << 2, 3, 1, 4;
+TEST(OpenCLTest, Debug) {
+    // std::vector<cl::Platform> platforms;
+    // cl::Platform::get(&platforms);
+    // for (auto& p : platforms) {
+    //     std::cout << p.getInfo<CL_PLATFORM_NAME>() << std::endl;
+    //     std::vector<cl::Device> devices;
+    //     p.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+    //     for (auto& d : devices) {
+    //         std::cout << "\t" << d.getInfo<CL_DEVICE_NAME>() << std::endl;
+    //     }
+    // }
+    std::vector<cl::Platform> platforms;
+    cl::Platform::get(&platforms);
 
+    int platform_id = 0;
+    int device_id   = 0;
 
-//     int widthA  = a.cols();
-//     int heightA = a.rows();
-//     int widthB  = b.cols();
-//     int heightB = b.rows();
+    std::cout << "Number of Platforms: " << platforms.size() << std::endl;
 
-//     // Create 1D views of the matrices so we can work on it
-//     auto A = a.reshaped<Eigen::RowMajor>();
-//     auto B = b.reshaped<Eigen::RowMajor>();
+    for (std::vector<cl::Platform>::iterator it = platforms.begin();
+         it != platforms.end(); ++it) {
+        cl::Platform platform(*it);
 
-//     cl::Context context(CL_DEVICE_TYPE_DEFAULT);
-//     cl::CommandQueue queue(context);
-//     cl::Program program = matmul::cl_utils::build_program(context, "matmul");
-//     cl::KernelFunctor<cl::Buffer, int, int, cl::Buffer, cl::Buffer>
-//         matmul(program, "matmul");
+        std::cout << "Platform ID: " << platform_id++ << std::endl;
+        std::cout << "Platform Name: " << platform.getInfo<CL_PLATFORM_NAME>()
+                  << std::endl;
+        std::cout
+            << "Platform Vendor: " << platform.getInfo<CL_PLATFORM_VENDOR>()
+            << std::endl;
 
-//     // Create buffers (device memory)
-//     cl::Buffer a_device(context, A.begin(), A.end(), /*Read only*/ true);
-//     cl::Buffer b_device(context, B.begin(), B.end(), /*Read only*/ true);
-//     cl::Buffer c_device(
-//         context, CL_MEM_WRITE_ONLY, sizeof(float) * widthB * widthB);
+        std::vector<cl::Device> devices;
+        platform.getDevices(CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_CPU, &devices);
 
-//     // Perform the computation
-//     matmul(cl::EnqueueArgs(queue, cl::NDRange(widthB, widthB)), c_device,
-//         widthB, heightB, a_device, b_device);
+        for (std::vector<cl::Device>::iterator it2 = devices.begin();
+             it2 != devices.end(); ++it2) {
+            cl::Device device(*it2);
 
-//     // Copy the result from the device to the host
-//     Eigen::MatrixXf c(2, 2);
-//     auto C = c.reshaped<Eigen::RowMajor>();
-//     cl::copy(queue, c_device, C.begin(), C.end());
-
-//     ASSERT_EQ(c, a * b);
-// }
+            std::cout << std::endl
+                      << "\tDevice " << device_id++ << ": " << std::endl;
+            std::cout << "\t\tDevice Name: " << device.getInfo<CL_DEVICE_NAME>()
+                      << std::endl;
+            std::cout
+                << "\t\tDevice Vendor: " << device.getInfo<CL_DEVICE_VENDOR>()
+                << std::endl;
+            std::cout
+                << "\t\tDevice Version: " << device.getInfo<CL_DEVICE_VERSION>()
+                << std::endl;
+            switch (device.getInfo<CL_DEVICE_TYPE>()) {
+            case 4: std::cout << "\t\tDevice Type: GPU" << std::endl; break;
+            case 2: std::cout << "\t\tDevice Type: CPU" << std::endl; break;
+            default: std::cout << "\t\tDevice Type: unknown" << std::endl;
+            }
+            std::cout << "\t\tDevice Max Compute Units: "
+                      << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>()
+                      << std::endl;
+            std::cout << "\t\tDevice Global Memory: "
+                      << device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()
+                      << std::endl;
+            std::cout << "\t\tDevice Max Clock Frequency: "
+                      << device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>()
+                      << std::endl;
+            std::cout << "\t\tDevice Max Memory Allocation: "
+                      << device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()
+                      << std::endl;
+            std::cout << "\t\tDevice Local Memory: "
+                      << device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()
+                      << std::endl;
+            std::cout << "\t\tDevice Available: "
+                      << device.getInfo<CL_DEVICE_AVAILABLE>() << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
 
 TEST(OpenCLTest, Base) {
     Eigen::MatrixXf a = Eigen::MatrixXf::Random(2, 2);
     Eigen::MatrixXf b = Eigen::MatrixXf::Random(2, 2);
     matmul::opencl clmatmul;
-    ASSERT_EQ(clmatmul(a, b), a * b);
+    ASSERT_TRUE(clmatmul(a, b).isApprox(a * b));
 }
