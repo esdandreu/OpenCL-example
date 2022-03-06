@@ -3,6 +3,9 @@
 
 #include "utils.hpp"
 
+#ifndef CL_HPP_ENABLE_EXCEPTIONS
+#define CL_HPP_ENABLE_EXCEPTIONS
+#endif
 #ifndef CL_HPP_TARGET_OPENCL_VERSION
 #define CL_HPP_TARGET_OPENCL_VERSION 210
 #endif
@@ -19,7 +22,9 @@ class opencl {
     cl::Program program;
 
     public:
-    opencl();
+    cl::Device device;
+
+    opencl(cl::Device& device = cl::Device::getDefault());
     Eigen::MatrixXf operator()(Eigen::MatrixXf& a, Eigen::MatrixXf& b);
 };
 
