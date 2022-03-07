@@ -1,18 +1,20 @@
 #include "matmul.hpp"
 #include <benchmark/benchmark.h>
+#include <cmath>
 #include <iostream>
 
 int MAX_DEVICES;
 
 class MatMul : public benchmark::Fixture {
     public:
+    int g_workgroup_size;
     Eigen::MatrixXf a;
     Eigen::MatrixXf b;
 
     void SetUp(const ::benchmark::State& state) {
-        int size = state.range(0);
-        a        = Eigen::MatrixXf::Random(size, size);
-        b        = Eigen::MatrixXf::Random(size, size);
+        g_workgroup_size = std::sqrt(state.range(0));
+        a = Eigen::MatrixXf::Random(g_workgroup_size, g_workgroup_size);
+        b = Eigen::MatrixXf::Random(g_workgroup_size, g_workgroup_size);
     }
 };
 
@@ -25,14 +27,14 @@ BENCHMARK_DEFINE_F(MatMul, Eigen)(benchmark::State& state) {
 BENCHMARK_REGISTER_F(MatMul, Eigen)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(2)
-    ->Range(8, 512);
+    ->Range(256, 8 << 10);
 
 class ClMatMul : public MatMul {
     public:
     matmul::opencl clmatmul;
     std::vector<cl::Device> devices;
     cl::Device device;
-    int workgroup_size;
+    int l_workgroup_size;
 
     ClMatMul() {
         devices = matmul::cl_utils::get_all_devices();
@@ -43,26 +45,29 @@ class ClMatMul : public MatMul {
         }
     }
 
-    void SetUp(const ::benchmark::State& state) {
+    void SetUp(benchmark::State& state) {
         MatMul::SetUp(state);
-        device         = devices[state.range(1)];
-        clmatmul       = matmul::opencl(device);
-        // TODO check if workgroup_size is too big
-        workgroup_size = state.range(2);
+        device           = devices[state.range(1)];
+        clmatmul         = matmul::opencl(device);
+        l_workgroup_size = state.range(2);
+        if (int mod = g_workgroup_size % l_workgroup_size) {
+            state.SkipWithError("Workgroup size is not a multiple of "
+                                "local workgroup size");
+        }
     }
 };
 
 BENCHMARK_DEFINE_F(ClMatMul, OpenCL)(benchmark::State& state) {
     for (auto _ : state) {
-        clmatmul(a, b, workgroup_size);
+        clmatmul(a, b, l_workgroup_size);
     }
 }
 
 BENCHMARK_REGISTER_F(ClMatMul, OpenCL)
     ->Unit(benchmark::kMillisecond)
-    ->ArgsProduct({ benchmark::CreateRange(8, 1024, /*mult*/ 2),
-        benchmark::CreateDenseRange(0, 2, /*step*/ 1),
-        benchmark::CreateRange(1, 8, /*mult*/ 2) });
+    ->ArgsProduct({ /*Work*/ benchmark::CreateRange(256, 1 << 14, /*mult*/ 4),
+        /*Devices*/ benchmark::CreateDenseRange(0, 2, /*step*/ 1),
+        /*Work-Items*/ benchmark::CreateRange(1, 16, /*mult*/ 2) });
 
 int main(int argc, char** argv) {
     MAX_DEVICES = matmul::cl_utils::get_all_devices().size();
