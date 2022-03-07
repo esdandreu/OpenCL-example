@@ -3,15 +3,18 @@
 
 matmul::opencl::opencl(cl::Device& device, int num_units) : device(device) {
     try {
-        if (num_units != NULL) {
-            cl_device_partition_property properties[] = {
-                CL_DEVICE_PARTITION_BY_COUNTS, 1,
-                CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0
-            };
-            std::vector<cl::Device> devices;
-            device.createSubDevices(&properties[0], &devices);
-            device = devices[0];
-        }
+        // if (num_units != NULL) {
+        //     // cl_device_partition_property properties[3] = {
+        //     //     CL_DEVICE_PARTITION_EQUALLY, 1, 0
+        //     // };
+        //     cl_device_partition_property properties[4] = {
+        //         CL_DEVICE_PARTITION_BY_COUNTS, 2,
+        //         CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0
+        //     };
+        //     std::vector<cl::Device> devices;
+        //     device.createSubDevices(properties, &devices);
+        //     device = devices[0];
+        // }
         context = cl::Context(device);
         queue   = cl::CommandQueue(context);
         program = matmul::cl_utils::build_program(context, "matmul");
@@ -23,8 +26,9 @@ matmul::opencl::opencl(cl::Device& device, int num_units) : device(device) {
     }
 }
 
-Eigen::MatrixXf
-matmul::opencl::operator()(Eigen::MatrixXf& a, Eigen::MatrixXf& b) {
+Eigen::MatrixXf matmul::opencl::operator()(Eigen::MatrixXf& a,
+    Eigen::MatrixXf& b,
+    int workgroup_size) {
     int heightA = a.rows();
     int widthB  = b.cols();
     int heightB = b.rows();
@@ -36,6 +40,9 @@ matmul::opencl::operator()(Eigen::MatrixXf& a, Eigen::MatrixXf& b) {
     // Our program
     cl::KernelFunctor<cl::Buffer, int, int, cl::Buffer, cl::Buffer> matmul(
         program, "matmul");
+    cl::Kernel kernel = matmul.getKernel();
+    // std::cout << kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(device)
+    //           << std::endl;
 
     // Create buffers (device memory)
     cl::Buffer A_device(context, A.begin(), A.end(), /*Read only*/ true);
@@ -43,9 +50,15 @@ matmul::opencl::operator()(Eigen::MatrixXf& a, Eigen::MatrixXf& b) {
     cl::Buffer output(
         context, CL_MEM_WRITE_ONLY, sizeof(float) * widthB * widthB);
 
-    // Perform the computation
-    matmul(cl::EnqueueArgs(queue, cl::NDRange(widthB, widthB)), output, widthB,
-        heightB, A_device, B_device);
+    if (workgroup_size == NULL) { // Use the default local workgroup size
+        cl::EnqueueArgs enqueueArgs(queue, cl::NDRange(widthB, widthB));
+        matmul(enqueueArgs, output, widthB, heightB, A_device, B_device);
+    } else { // Specify the local workgroup size
+        cl::EnqueueArgs enqueueArgs(/*command queue*/ queue,
+            /*global workgroup size*/ cl::NDRange(widthB, widthB),
+            /*local workgroup size*/ cl::NDRange(workgroup_size, workgroup_size));
+        matmul(enqueueArgs, output, widthB, heightB, A_device, B_device);
+    }
 
     // Copy the result from the device to the host
     Eigen::MatrixXf c(heightA, widthB);
