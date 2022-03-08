@@ -1,4 +1,5 @@
 #include "matmul.hpp"
+#include <algorithm>
 #include <benchmark/benchmark.h>
 #include <cmath>
 #include <iostream>
@@ -65,6 +66,8 @@ BENCHMARK_DEFINE_F(ClMatMul, OpenCL)(benchmark::State& state) {
 
 BENCHMARK_REGISTER_F(ClMatMul, OpenCL)
     ->Unit(benchmark::kMillisecond)
+    // ->ArgsProduct({ /*Work*/ benchmark::CreateRange(256, 1 << 14, /*mult*/
+    // 4),
     ->ArgsProduct({ /*Work*/ benchmark::CreateRange(256, 1 << 14, /*mult*/ 4),
         /*Devices*/ benchmark::CreateDenseRange(0, 2, /*step*/ 1),
         /*Work-Items*/ benchmark::CreateRange(1, 16, /*mult*/ 2) });

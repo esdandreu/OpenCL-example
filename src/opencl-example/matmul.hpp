@@ -22,6 +22,7 @@ class opencl {
     cl::Program program;
 
     public:
+    cl::Kernel kernel;
     cl::Device device;
 
     opencl(cl::Device& device = cl::Device::getDefault(), int num_units = NULL);

@@ -18,6 +18,7 @@ matmul::opencl::opencl(cl::Device& device, int num_units) : device(device) {
         context = cl::Context(device);
         queue   = cl::CommandQueue(context);
         program = matmul::cl_utils::build_program(context, "matmul");
+        kernel  = cl::Kernel(program, "matmul");
     } catch (cl::Error error) {
         // https://streamhpc.com/blog/2013-04-28/opencl-error-codes/
         std::cerr << "OpenCL error: " << error.what() << "(" << error.err()
@@ -39,10 +40,7 @@ Eigen::MatrixXf matmul::opencl::operator()(Eigen::MatrixXf& a,
 
     // Our program
     cl::KernelFunctor<cl::Buffer, int, int, cl::Buffer, cl::Buffer> matmul(
-        program, "matmul");
-    cl::Kernel kernel = matmul.getKernel();
-    // std::cout << kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(device)
-    //           << std::endl;
+        kernel);
 
     // Create buffers (device memory)
     cl::Buffer A_device(context, A.begin(), A.end(), /*Read only*/ true);

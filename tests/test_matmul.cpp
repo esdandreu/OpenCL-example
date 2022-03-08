@@ -46,6 +46,10 @@ TEST(OpenCLTest, PrintDevices) {
                 << "\t\tMax Workgroup Size: "
                 << clmatmul.device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>()
                 << std::endl
+                << "\t\tKernel Work Group Size: "
+                << clmatmul.kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(
+                       clmatmul.device)
+                << std::endl
                 << "\t\tGlobal Memory: "
                 << clmatmul.device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()
                 << std::endl
