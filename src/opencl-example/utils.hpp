@@ -30,13 +30,21 @@ build_program(const cl::Context& context, const std::string& name) {
     return cl::Program(context, source, /* build */ true);
 }
 
-static inline std::vector<cl::Device> get_all_devices() {
+static inline std::vector<cl::Device> get_all_devices(
+    cl_device_type type = CL_DEVICE_TYPE_ALL) {
     std::vector<cl::Device> all_devices;
     std::vector<cl::Platform> platforms;
     cl_int err = cl::Platform::get(&platforms);
     for (auto& p : platforms) {
         std::vector<cl::Device> devices;
-        p.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+        try {
+            p.getDevices(type, &devices);
+        } catch (cl::Error& error) { // Ignore platforms with no devices
+            if (error.err() == CL_DEVICE_NOT_FOUND) {
+                continue;
+            }
+            throw;
+        }
         // for (auto& d : devices) {
         //     cl::Device device_copy(d);
         //     all_devices.push_back(device_copy);

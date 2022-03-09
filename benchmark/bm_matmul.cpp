@@ -30,12 +30,15 @@ BENCHMARK_REGISTER_F(MatMul, Eigen)
     ->RangeMultiplier(2)
     ->Range(256, 8 << 10);
 
-class ClMatMul : public MatMul {
+class ClMatMul : public benchmark::Fixture {
     public:
     matmul::opencl clmatmul;
     std::vector<cl::Device> devices;
     cl::Device device;
-    int l_workgroup_size;
+    unsigned long l_workgroup_size;
+    unsigned long g_workgroup_size;
+    Eigen::MatrixXf a;
+    Eigen::MatrixXf b;
 
     ClMatMul() {
         devices = matmul::cl_utils::get_all_devices();
@@ -47,14 +50,26 @@ class ClMatMul : public MatMul {
     }
 
     void SetUp(benchmark::State& state) {
-        MatMul::SetUp(state);
-        device           = devices[state.range(1)];
-        clmatmul         = matmul::opencl(device);
-        l_workgroup_size = state.range(2);
+        device = devices[state.range(0)];
+        if (device.getInfo<CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS>() < 2) {
+            state.SkipWithError("Device does not support two dimmensions");
+        }
+        clmatmul = matmul::opencl(device);
+        size_t k_workgroup_size =
+            clmatmul.kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(device);
+        l_workgroup_size =
+            std::sqrt(static_cast<unsigned long>(k_workgroup_size));
+        g_workgroup_size = l_workgroup_size * state.range(1);
         if (int mod = g_workgroup_size % l_workgroup_size) {
+            std::cout << state.range(1) << std::endl;
+            std::cout << l_workgroup_size << std::endl;
+            std::cout << g_workgroup_size << std::endl;
+            std::cout << mod << std::endl;
             state.SkipWithError("Workgroup size is not a multiple of "
                                 "local workgroup size");
         }
+        a = Eigen::MatrixXf::Random(g_workgroup_size, g_workgroup_size);
+        b = Eigen::MatrixXf::Random(g_workgroup_size, g_workgroup_size);
     }
 };
 
@@ -66,11 +81,8 @@ BENCHMARK_DEFINE_F(ClMatMul, OpenCL)(benchmark::State& state) {
 
 BENCHMARK_REGISTER_F(ClMatMul, OpenCL)
     ->Unit(benchmark::kMillisecond)
-    // ->ArgsProduct({ /*Work*/ benchmark::CreateRange(256, 1 << 14, /*mult*/
-    // 4),
-    ->ArgsProduct({ /*Work*/ benchmark::CreateRange(256, 1 << 14, /*mult*/ 4),
-        /*Devices*/ benchmark::CreateDenseRange(0, 2, /*step*/ 1),
-        /*Work-Items*/ benchmark::CreateRange(1, 16, /*mult*/ 2) });
+    ->ArgsProduct({ /*Devices*/ benchmark::CreateDenseRange(0, 2, /*step*/ 1),
+        /*Computing Units*/ benchmark::CreateRange(1, 16, /*mult*/ 2) });
 
 int main(int argc, char** argv) {
     MAX_DEVICES = matmul::cl_utils::get_all_devices().size();

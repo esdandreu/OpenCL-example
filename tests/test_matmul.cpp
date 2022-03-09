@@ -127,3 +127,22 @@ int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+
+TEST(OpenCLTest, createSubDevices) {
+    cl::Device cpu_device =
+        matmul::cl_utils::get_all_devices(CL_DEVICE_TYPE_CPU)[0];
+    std::vector<cl::Device> devices;
+    cl_device_partition_property properties[] = { CL_DEVICE_PARTITION_BY_COUNTS,
+        3, 1, CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 }; // 0 terminates the
+                                                           // property list
+    cpu_device.createSubDevices(properties, &devices);
+    for (auto& device : devices) {
+        // Debug print
+        // std::cout << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+        // std::cout << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
+        matmul::opencl clmatmul(device);
+        Eigen::MatrixXf a = Eigen::MatrixXf::Random(2, 2);
+        Eigen::MatrixXf b = Eigen::MatrixXf::Random(2, 2);
+        ASSERT_TRUE(clmatmul(a, b).isApprox(a * b));
+    }
+}
