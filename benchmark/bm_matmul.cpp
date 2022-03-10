@@ -96,10 +96,14 @@ class ClMatMulComputeUnits : public ClMatMul {
                     devices[i].getInfo<CL_DEVICE_NAME>();
                 context["devices"][i]["max_work_group_size"] =
                     devices[i].getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+                context["devices"][i]["local_mem_size"] =
+                    devices[i].getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
                 context["devices"][i]["global_mem_size"] =
                     devices[i].getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
                 context["devices"][i]["global_mem_cache_size"] =
                     devices[i].getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>();
+                context["devices"][i]["global_mem_cacheline_size"] =
+                    devices[i].getInfo<CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE>();
             }
             benchmark::AddCustomContext("ClMatMulComputeUnits", context.dump());
         }
