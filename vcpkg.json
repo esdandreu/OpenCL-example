@@ -2,7 +2,6 @@
     "name": "opencl-example",
     "version-string": "0.0.1",
     "dependencies": [
-        "pybind11",
         "eigen3",
         "opencl",
         "nlohmann-json",
