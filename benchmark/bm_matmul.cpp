@@ -28,7 +28,7 @@ BENCHMARK_DEFINE_F(MatMul, Eigen)(benchmark::State& state) {
 BENCHMARK_REGISTER_F(MatMul, Eigen)
     ->Unit(benchmark::kMillisecond)
     ->RangeMultiplier(2)
-    ->Range(256, 8 << 10);
+    ->Range(1 << 8, 1 << 21);
 
 class ClMatMul : public MatMul {
     public:
@@ -72,8 +72,9 @@ BENCHMARK_DEFINE_F(ClMatMul, OpenCL)(benchmark::State& state) {
 
 BENCHMARK_REGISTER_F(ClMatMul, OpenCL)
     ->Unit(benchmark::kMillisecond)
-    ->ArgsProduct({ /*Work*/ benchmark::CreateRange(256, 8 << 10, /*mult*/ 2),
-        /*Devices*/ benchmark::CreateDenseRange(0, 2, /*step*/ 1) });
+    ->ArgsProduct(
+        { /*Work*/ benchmark::CreateRange(1 << 8, 1 << 21, /*mult*/ 2),
+            /*Devices*/ benchmark::CreateDenseRange(0, 2, /*step*/ 1) });
 
 class ClMatMulComputeUnits : public ClMatMul {
 
@@ -111,9 +112,10 @@ BENCHMARK_DEFINE_F(ClMatMulComputeUnits, OpenCL)(benchmark::State& state) {
 
 BENCHMARK_REGISTER_F(ClMatMulComputeUnits, OpenCL)
     ->Unit(benchmark::kMillisecond)
-    ->ArgsProduct({ /*Work*/ benchmark::CreateRange(1 << 9, 1 << 21, /*mult*/ 8),
-        /*Devices*/ { 0 },
-        /*ComputeUnits*/ benchmark::CreateDenseRange(1, 12, /*step*/ 1) });
+    ->ArgsProduct(
+        { /*Work*/ benchmark::CreateRange(1 << 9, 1 << 21, /*mult*/ 8),
+            /*Devices*/ { 0 },
+            /*ComputeUnits*/ benchmark::CreateDenseRange(1, 12, /*step*/ 1) });
 
 int main(int argc, char** argv) {
     MAX_DEVICES = matmul::cl_utils::get_all_devices().size();
