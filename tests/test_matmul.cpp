@@ -128,21 +128,37 @@ int main(int argc, char** argv) {
     return RUN_ALL_TESTS();
 }
 
+// TODO this should be a parametric test
 TEST(OpenCLTest, createSubDevices) {
-    cl::Device cpu_device =
-        matmul::cl_utils::get_all_devices(CL_DEVICE_TYPE_CPU)[0];
-    std::vector<cl::Device> devices;
-    cl_device_partition_property properties[] = { CL_DEVICE_PARTITION_BY_COUNTS,
-        3, 1, CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0 }; // 0 terminates the
-                                                           // property list
-    cpu_device.createSubDevices(properties, &devices);
-    for (auto& device : devices) {
-        // Debug print
+    std::vector<cl::Device> all_devices = matmul::cl_utils::get_all_devices();
+    for (auto& device : all_devices) {
+        // Check if device is valid to be partitioned
+        cl_int max_sub_devices;
+        device.getInfo(CL_DEVICE_PARTITION_MAX_SUB_DEVICES, &max_sub_devices);
         // std::cout << device.getInfo<CL_DEVICE_NAME>() << std::endl;
-        // std::cout << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
-        matmul::opencl clmatmul(device);
-        Eigen::MatrixXf a = Eigen::MatrixXf::Random(2, 2);
-        Eigen::MatrixXf b = Eigen::MatrixXf::Random(2, 2);
-        ASSERT_TRUE(clmatmul(a, b).isApprox(a * b));
+        // std::cout << "Max Sub Devices: " << max_sub_devices << std::endl;
+        if (max_sub_devices == 0) {
+            continue;
+        }
+        // We only succeeded partitioning CPUs
+        if (device.getInfo<CL_DEVICE_TYPE>() != CL_DEVICE_TYPE_CPU) {
+            continue;
+        }
+        // Partition the device
+        std::vector<cl::Device> subdevices;
+        cl_device_partition_property properties[] = {
+            CL_DEVICE_PARTITION_BY_COUNTS, 3,
+            CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0
+        }; // 0 terminates the property list
+        device.createSubDevices(properties, &subdevices);
+        ASSERT_EQ(subdevices.size(), 1);
+        EXPECT_EQ(subdevices[0].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>(), 3);
+        for (auto& subdevice : subdevices) {
+            // Check that the partition is valid
+            matmul::opencl clmatmul(subdevice);
+            Eigen::MatrixXf a = Eigen::MatrixXf::Random(2, 2);
+            Eigen::MatrixXf b = Eigen::MatrixXf::Random(2, 2);
+            ASSERT_TRUE(clmatmul(a, b).isApprox(a * b));
+        }
     }
 }
