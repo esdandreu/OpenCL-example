@@ -7,13 +7,36 @@
 int MAX_DEVICES;
 
 TEST(EigenTest, Multiply) {
+    // Input
     Eigen::MatrixXf a(2, 2);
     a << 1, 2, 2, 1;
     Eigen::MatrixXf b(2, 2);
     b << 2, 3, 1, 4;
+    int heightA = a.rows();
+    int widthB  = b.cols();
+    int heightB = b.rows();
+    auto A      = a.reshaped<Eigen::RowMajor>();
+    auto B      = b.reshaped<Eigen::RowMajor>();
+
+    // Output
+    Eigen::MatrixXf c(heightA, widthB);
+    auto C = c.reshaped<Eigen::RowMajor>();
+
+    // C++ multiplication
+    for (int col = 0; col < widthB; col++) {
+        for (int row = 0; row < heightA; row++) {
+            for (int i = 0; i < heightB; i++) {
+                C[row * widthB + col] +=
+                    A[row * heightB + i] * B[i * widthB + col];
+            }
+        }
+    }
+
+    // Hardcoded result
     Eigen::MatrixXf r(2, 2);
     r << 4, 11, 5, 10;
     ASSERT_EQ(a * b, r);
+    ASSERT_EQ(c, r);
 }
 
 TEST(OpenCLTest, MatmulFileExists) {
@@ -50,8 +73,17 @@ TEST(OpenCLTest, PrintDevices) {
                 << clmatmul.kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(
                        clmatmul.device)
                 << std::endl
+                << "\t\tLocal Memory: "
+                << clmatmul.device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()
+                << std::endl
                 << "\t\tGlobal Memory: "
                 << clmatmul.device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()
+                << std::endl
+                << "\t\tGlobal Cache Memory: "
+                << clmatmul.device.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>()
+                << std::endl
+                << "\t\tGlobal Cache Line Memory: "
+                << clmatmul.device.getInfo<CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE>()
                 << std::endl
                 << "\t\tOpenCL Supported Version: "
                 << clmatmul.device.getInfo<CL_DEVICE_VERSION>() << std::endl
@@ -72,6 +104,43 @@ TEST(OpenCLTest, PrintDevices) {
         }
         std::cout << std::endl;
     }
+}
+
+TEST(OpenCLTest, ExampleHost) {
+    // Define input
+    Eigen::MatrixXf a = Eigen::MatrixXf::Random(2, 2);
+    Eigen::MatrixXf b = Eigen::MatrixXf::Random(2, 2);
+    int heightA       = a.rows();
+    int widthB        = b.cols();
+    int heightB       = b.rows();
+    // Create 1D views of the matrices so we can work on it
+    auto A = a.reshaped<Eigen::RowMajor>();
+    auto B = b.reshaped<Eigen::RowMajor>();
+
+    // Define context and kernel
+    cl::Context context;
+    cl::CommandQueue queue(context);
+    cl::Program program = matmul::cl_utils::build_program(context, "matmul");
+    cl::Kernel kernel(program, "matmul");
+    cl::KernelFunctor<cl::Buffer, int, int, cl::Buffer, cl::Buffer> matmul(
+        kernel);
+
+    // Create buffers (device memory)
+    cl::Buffer A_device(context, A.begin(), A.end(), /*Read only*/ true);
+    cl::Buffer B_device(context, B.begin(), B.end(), /*Read only*/ true);
+    cl::Buffer output(
+        context, CL_MEM_WRITE_ONLY, sizeof(float) * widthB * widthB);
+
+    // Enqueue, submit and start execution
+    matmul(cl::EnqueueArgs(queue, cl::NDRange(widthB, widthB)), output, widthB,
+        heightB, A_device, B_device);
+
+    // Copy the result from the device once the execution ended
+    Eigen::MatrixXf c(heightA, widthB);
+    auto C = c.reshaped<Eigen::RowMajor>();
+    cl::copy(queue, output, C.begin(), C.end());
+
+    ASSERT_TRUE(c.isApprox(a * b));
 }
 
 TEST(OpenCLTest, Base) {
@@ -111,8 +180,8 @@ TEST_P(DeviceTest, WorkGroupSize) {
 INSTANTIATE_TEST_SUITE_P(OpenCLTest,
     DeviceTest,
     // For some reason, passing cl::Device directly as a parameter fails,
-    // therefore we will work around it by setting the device index and finding
-    // all devices in the test setup.
+    // therefore we will work around it by setting the device index and
+    // finding all devices in the test setup.
     testing::Combine(testing::Range(0, MAX_DEVICES), testing::Values(1, 2)),
     [](const testing::TestParamInfo<std::tuple<int, int>>& info) {
         int device_id = std::get<0>(info.param);
@@ -121,12 +190,6 @@ INSTANTIATE_TEST_SUITE_P(OpenCLTest,
         ss << "D" << device_id << "N" << N;
         return ss.str();
     });
-
-int main(int argc, char** argv) {
-    MAX_DEVICES = matmul::cl_utils::get_all_devices().size();
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
 
 // TODO this should be a parametric test
 TEST(OpenCLTest, createSubDevices) {
@@ -161,4 +224,10 @@ TEST(OpenCLTest, createSubDevices) {
             ASSERT_TRUE(clmatmul(a, b).isApprox(a * b));
         }
     }
+}
+
+int main(int argc, char** argv) {
+    MAX_DEVICES = matmul::cl_utils::get_all_devices().size();
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

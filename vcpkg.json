@@ -5,6 +5,7 @@
         "pybind11",
         "eigen3",
         "opencl",
+        "nlohmann-json",
         "benchmark",
         "gtest"
     ]

@@ -3,12 +3,13 @@
 #include <benchmark/benchmark.h>
 #include <cmath>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 int MAX_DEVICES;
 
 class MatMul : public benchmark::Fixture {
     public:
-    int g_workgroup_size;
+    unsigned int g_workgroup_size;
     Eigen::MatrixXf a;
     Eigen::MatrixXf b;
 
@@ -37,12 +38,16 @@ class ClMatMul : public MatMul {
     std::vector<cl::Device> devices;
     cl::Device device;
 
-    ClMatMul(cl_device_type type = CL_DEVICE_TYPE_ALL) : type(type) {
+    ClMatMul(cl_device_type type = CL_DEVICE_TYPE_ALL, bool add_context = true)
+    : type(type) {
         devices = matmul::cl_utils::get_all_devices(type);
-        int i   = 0;
-        for (auto& device : devices) {
-            std::cout << i++ << ": " << device.getInfo<CL_DEVICE_NAME>()
-                      << std::endl;
+        if (add_context) {
+            nlohmann::json context;
+            for (int i = 0; i < devices.size(); i++) {
+                context["devices"][i]["name"] =
+                    devices[i].getInfo<CL_DEVICE_NAME>();
+            }
+            benchmark::AddCustomContext("ClMatMul", context.dump());
         }
     }
 
@@ -81,26 +86,46 @@ class ClMatMulComputeUnits : public ClMatMul {
     public:
     int compute_units;
 
-    ClMatMulComputeUnits(cl_device_type type = CL_DEVICE_TYPE_CPU)
-    : ClMatMul(type){};
+    ClMatMulComputeUnits(cl_device_type type = CL_DEVICE_TYPE_CPU,
+        bool add_context                     = true)
+    : ClMatMul(type, false) {
+        if (add_context) {
+            nlohmann::json context;
+            for (int i = 0; i < devices.size(); i++) {
+                context["devices"][i]["name"] =
+                    devices[i].getInfo<CL_DEVICE_NAME>();
+                context["devices"][i]["max_work_group_size"] =
+                    devices[i].getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+                context["devices"][i]["global_mem_size"] =
+                    devices[i].getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
+                context["devices"][i]["global_mem_cache_size"] =
+                    devices[i].getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>();
+            }
+            benchmark::AddCustomContext("ClMatMulComputeUnits", context.dump());
+        }
+    };
 
     void SetUp(benchmark::State& state) {
         MatMul::SetUp(state);
         device = getDevice(state);
         std::vector<cl::Device> subdevices;
         compute_units = state.range(2);
-        if (compute_units > device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>()) {
-            state.SkipWithError("Device has not so many compute units");
+        if (compute_units < 1) { // Do not partition the device
+            clmatmul = matmul::opencl(device);
+        } else { // Partition the device
+            if (compute_units > device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>()) {
+                state.SkipWithError("Device has not so many compute units");
+            }
+            cl_device_partition_property properties[] = {
+                CL_DEVICE_PARTITION_BY_COUNTS, compute_units,
+                CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0
+            }; // 0 terminates the property list
+            device.createSubDevices(properties, &subdevices);
+            if (subdevices.size() < 1) {
+                state.SkipWithError("Could not create subdevices");
+            }
+            clmatmul = matmul::opencl(subdevices[0]);
         }
-        cl_device_partition_property properties[] = {
-            CL_DEVICE_PARTITION_BY_COUNTS, compute_units,
-            CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0
-        }; // 0 terminates the property list
-        device.createSubDevices(properties, &subdevices);
-        if (subdevices.size() < 1) {
-            state.SkipWithError("Could not create subdevices");
-        }
-        clmatmul = matmul::opencl(subdevices[0]);
     }
 };
 
@@ -113,9 +138,9 @@ BENCHMARK_DEFINE_F(ClMatMulComputeUnits, OpenCL)(benchmark::State& state) {
 BENCHMARK_REGISTER_F(ClMatMulComputeUnits, OpenCL)
     ->Unit(benchmark::kMillisecond)
     ->ArgsProduct(
-        { /*Work*/ benchmark::CreateRange(1 << 9, 1 << 21, /*mult*/ 8),
+        { /*Work*/ benchmark::CreateRange(1 << 8, 1 << 24, /*mult*/ 2),
             /*Devices*/ { 0 },
-            /*ComputeUnits*/ benchmark::CreateDenseRange(1, 12, /*step*/ 1) });
+            /*ComputeUnits*/ benchmark::CreateDenseRange(0, 12, /*step*/ 1) });
 
 int main(int argc, char** argv) {
     MAX_DEVICES = matmul::cl_utils::get_all_devices().size();

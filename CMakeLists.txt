@@ -47,6 +47,7 @@ project(${PROJECT_NAME} VERSION ${VERSION_STRING})
 # wrapper
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(OpenCL REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC 
     src/${PROJECT_NAME}/matmul.cpp
@@ -61,6 +62,7 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
         Eigen3::Eigen
         OpenCL::OpenCL
+        nlohmann_json::nlohmann_json
 )
 
 # ---------------------------- Build library tests ----------------------------
