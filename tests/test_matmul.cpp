@@ -155,7 +155,6 @@ TEST(OpenCLTest, InvalidDevice) {
     ASSERT_THROW(matmul::opencl clmatmul(device), cl::Error);
 }
 
-// class DeviceTest : public testing::TestWithParam<int> {
 class DeviceTest : public testing::TestWithParam<std::tuple<int, int>> {
     protected:
     std::vector<cl::Device> devices;

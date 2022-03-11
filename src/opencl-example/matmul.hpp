@@ -25,7 +25,7 @@ class opencl {
     cl::Kernel kernel;
     cl::Device device;
 
-    opencl(cl::Device& device = cl::Device::getDefault(), int num_units = NULL);
+    opencl(cl::Device& device = cl::Device::getDefault());
     Eigen::MatrixXf operator()(Eigen::MatrixXf& a,
         Eigen::MatrixXf& b,
         int workgroup_size = NULL);

@@ -1,20 +1,8 @@
 #include "matmul.hpp"
 #include <iostream>
 
-matmul::opencl::opencl(cl::Device& device, int num_units) : device(device) {
+matmul::opencl::opencl(cl::Device& device) : device(device) {
     try {
-        // if (num_units != NULL) {
-        //     // cl_device_partition_property properties[3] = {
-        //     //     CL_DEVICE_PARTITION_EQUALLY, 1, 0
-        //     // };
-        //     cl_device_partition_property properties[4] = {
-        //         CL_DEVICE_PARTITION_BY_COUNTS, 2,
-        //         CL_DEVICE_PARTITION_BY_COUNTS_LIST_END, 0
-        //     };
-        //     std::vector<cl::Device> devices;
-        //     device.createSubDevices(properties, &devices);
-        //     device = devices[0];
-        // }
         context = cl::Context(device);
         queue   = cl::CommandQueue(context);
         program = matmul::cl_utils::build_program(context, "matmul");
