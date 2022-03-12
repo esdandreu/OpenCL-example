@@ -118,7 +118,7 @@ TEST(OpenCLTest, ExampleHost) {
     auto B = b.reshaped<Eigen::RowMajor>();
 
     // Define context and kernel
-    cl::Context context;
+    cl::Context context(cl::Device::getDefault());
     cl::CommandQueue queue(context);
     cl::Program program = matmul::cl_utils::build_program(context, "matmul");
     cl::Kernel kernel(program, "matmul");
