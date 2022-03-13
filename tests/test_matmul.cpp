@@ -22,13 +22,17 @@ TEST(EigenTest, Multiply) {
     Eigen::MatrixXf c(heightA, widthB);
     auto C = c.reshaped<Eigen::RowMajor>();
 
+    int m = heightA;
+    int n = heightB;
+    int p = widthB;
     // C++ multiplication
-    for (int col = 0; col < widthB; col++) {
-        for (int row = 0; row < heightA; row++) {
-            for (int i = 0; i < heightB; i++) {
-                C[row * widthB + col] +=
-                    A[row * heightB + i] * B[i * widthB + col];
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < p; j++) {
+            float c_ij = 0.0f;
+            for (int k = 0; k < n; k++) {
+                c_ij += A[i * n + k] * B[k * p + j];
             }
+            C[i * p + j] = c_ij;
         }
     }
 
@@ -36,7 +40,7 @@ TEST(EigenTest, Multiply) {
     Eigen::MatrixXf r(2, 2);
     r << 4, 11, 5, 10;
     ASSERT_EQ(a * b, r);
-    // ASSERT_TRUE(c.isApprox(r));
+    ASSERT_TRUE(c.isApprox(r));
 }
 
 TEST(OpenCLTest, MatmulFileExists) {
@@ -166,7 +170,7 @@ TEST(OpenCLTest, ContextDevices) {
     }
     // We should not be able to create a context with devices from different
     // platforms
-    if (platforms.size() > 1) { 
+    if (platforms.size() > 1) {
         ASSERT_THROW({ cl::Context context(all_devices); }, cl::Error);
     }
 }
