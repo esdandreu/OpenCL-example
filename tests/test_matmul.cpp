@@ -143,6 +143,34 @@ TEST(OpenCLTest, ExampleHost) {
     ASSERT_TRUE(c.isApprox(a * b));
 }
 
+TEST(OpenCLTest, ContextDevices) {
+    std::vector<cl::Device> all_devices;
+    std::vector<cl::Platform> platforms;
+    cl_int err = cl::Platform::get(&platforms);
+    for (auto& p : platforms) {
+        std::vector<cl::Device> devices;
+        try {
+            p.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+        } catch (cl::Error& error) { // Ignore platforms with no devices
+            if (error.err() == CL_DEVICE_NOT_FOUND) {
+                continue;
+            }
+            throw;
+        }
+        // We should be able to crate a context with multiple devices from the
+        // same platform
+        EXPECT_NO_THROW({ cl::Context context(devices); });
+        all_devices.insert(all_devices.end(),
+            std::make_move_iterator(devices.begin()),
+            std::make_move_iterator(devices.end()));
+    }
+    // We should not be able to create a context with devices from different
+    // platforms
+    if (platforms.size() > 1) { 
+        ASSERT_THROW({ cl::Context context(all_devices); }, cl::Error);
+    }
+}
+
 TEST(OpenCLTest, Base) {
     Eigen::MatrixXf a = Eigen::MatrixXf::Random(2, 2);
     Eigen::MatrixXf b = Eigen::MatrixXf::Random(2, 2);
